@@ -116,7 +116,9 @@ router.get('/debug', authenticate, async (req, res) => {
                 deadlineType: typeof jobData.deadline,
                 deadlineKeys: jobData.deadline ? Object.keys(jobData.deadline) : 'null'
             });
+
             allJobs.push({ id: doc.id, ...jobData });
+
         });
         
         res.json({
@@ -124,6 +126,7 @@ router.get('/debug', authenticate, async (req, res) => {
             jobs: allJobs,
             message: 'Debug information'
         });
+        
     } catch (error) {
         console.error('Debug error:', error);
         res.status(500).json({ error: error.message });

@@ -65,6 +65,51 @@ router.post('/faculties', authenticate, authorize('institution'), async (req, re
   }
 });
 
+// Update institution profile
+router.put('/profile', authenticate, authorize('institution'), async (req, res) => {
+  try {
+    const institutionId = req.user.uid;
+    const {
+      institutionName,
+      phone,
+      description,
+      website,
+      address,
+      establishedYear
+    } = req.body;
+
+    console.log('Updating institution profile for:', institutionId);
+    console.log('Update data:', req.body);
+
+    const updateData = {
+      updatedAt: new Date()
+    };
+
+    // Only add fields that are provided
+    if (institutionName !== undefined) {
+      updateData.institutionName = institutionName;
+      updateData.displayName = institutionName; // Also update displayName
+    }
+    if (phone !== undefined) updateData.phone = phone;
+    if (description !== undefined) updateData.description = description;
+    if (website !== undefined) updateData.website = website;
+    if (address !== undefined) updateData.address = address;
+    if (establishedYear !== undefined) updateData.establishedYear = establishedYear;
+
+    await db.collection('users').doc(institutionId).update(updateData);
+
+    console.log('✅ Institution profile updated successfully:', institutionId);
+    res.json({ 
+      message: 'Profile updated successfully',
+      updatedFields: Object.keys(updateData)
+    });
+
+  } catch (error) {
+    console.error('❌ Error updating institution profile:', error);
+    res.status(500).json({ error: 'Failed to update profile: ' + error.message });
+  }
+});
+
 // Get institution's faculties
 router.get('/faculties', authenticate, authorize('institution'), async (req, res) => {
   try {

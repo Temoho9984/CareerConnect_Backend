@@ -48,6 +48,91 @@ router.post('/jobs', authenticate, authorize('company'), async (req, res) => {
   }
 });
 
+// Update company profile
+router.put('/profile', authenticate, authorize('company'), async (req, res) => {
+  try {
+    const companyId = req.user.uid;
+    const {
+      companyName,
+      phone,
+      description,
+      website,
+      industry,
+      size,
+      location
+    } = req.body;
+
+    console.log('Updating company profile for:', companyId);
+    console.log('Update data:', req.body);
+
+    const updateData = {
+      updatedAt: new Date()
+    };
+
+    // Only add fields that are provided
+    if (companyName !== undefined) updateData.companyName = companyName;
+    if (phone !== undefined) updateData.phone = phone;
+    if (description !== undefined) updateData.description = description;
+    if (website !== undefined) updateData.website = website;
+    if (industry !== undefined) updateData.industry = industry;
+    if (size !== undefined) updateData.size = size;
+    if (location !== undefined) updateData.location = location;
+
+    // Also update displayName if companyName is provided
+    if (companyName !== undefined) {
+      updateData.displayName = companyName;
+    }
+
+    await db.collection('users').doc(companyId).update(updateData);
+
+    console.log('✅ Company profile updated successfully:', companyId);
+    res.json({ 
+      message: 'Profile updated successfully',
+      updatedFields: Object.keys(updateData)
+    });
+
+  } catch (error) {
+    console.error('❌ Error updating company profile:', error);
+    res.status(500).json({ error: 'Failed to update profile: ' + error.message });
+  }
+});
+
+// Get company profile
+router.get('/profile', authenticate, authorize('company'), async (req, res) => {
+  try {
+    const companyId = req.user.uid;
+
+    const companyDoc = await db.collection('users').doc(companyId).get();
+
+    if (!companyDoc.exists) {
+      return res.status(404).json({ error: 'Company not found' });
+    }
+
+    const companyData = companyDoc.data();
+
+    // Get company's job stats
+    const jobsSnapshot = await db.collection('jobs')
+      .where('companyId', '==', companyId)
+      .get();
+
+    const stats = {
+      totalJobs: jobsSnapshot.size,
+      activeJobs: jobsSnapshot.docs.filter(doc => doc.data().isActive).length,
+      totalApplicants: 0 // You can calculate this if needed
+    };
+
+    console.log('✅ Company profile fetched:', companyId);
+    res.json({
+      ...companyData,
+      stats
+    });
+
+  } catch (error) {
+    console.error('❌ Error fetching company profile:', error);
+    res.status(500).json({ error: 'Failed to fetch profile' });
+  }
+});
+
 // Get company's jobs - FIXED VERSION (no ordering)
 router.get('/jobs', authenticate, authorize('company'), async (req, res) => {
   try {
